@@ -1,0 +1,28 @@
+#######################################
+# Syntax Coloring Map NixieLib
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+RF_Sensor	KEYWORD1
+Baro_Sensor	KEYWORD1
+Nixie_Display	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+ShowClock KEYWORD2
+ShowWeather KEYWORD2
+Disp_Test KEYWORD2
+SetPressure KEYWORD2
+SetTemp KEYWORD2
+ClearMinMax KEYWORD2
+SetHum KEYWORD2
+SetDewPoint KEYWORD2
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
