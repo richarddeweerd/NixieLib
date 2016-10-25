@@ -17,6 +17,7 @@ Nixie_Display::Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_
 	_HV_Pin = hv_pin;
 	DimStatus = 0;
 	NightMode = 0;
+	PulseCount = 0;
 	
 	pinMode(_C_LatchPin, OUTPUT);
 	pinMode(_C_ClockPin, OUTPUT);
@@ -65,8 +66,33 @@ void Nixie_Display::SetMinMaxLed(byte MinMaxL){
 			break;
 	}
 }
+
+void Nixie_Display::Pulse(){
+	if (PulseCount != _lastPulse){
+		_lastPulse = PulseCount;
+		if (NightMode == 0){
+			if (ScreenSaverActive == 0){
+				if (_td == 0){
+					//Time displayed
+					if (PulseCount < (PulsesPerSec/2)){
+						Clock_Blink_On();
+					} else {
+						Clock_Blink_Off();
+					}
+				} else {
+					//date is displayed
+					Date_Leds_On();
+				}
+
+			} else {
+				
+			}
+		}
+	}
+	DimmerPulse();
+}
 	
-void Nixie_Display::ShowClock(byte hr, byte min, byte sec){
+void Nixie_Display::ShowTime(byte hr, byte min, byte sec){
     _td = 0;
 	
 	byte byte1;
@@ -88,11 +114,7 @@ void Nixie_Display::ShowClock(byte hr, byte min, byte sec){
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte3); 	
 	digitalWrite(_C_LatchPin, HIGH);
 	
-	if (_Sec_Stat <= 1){
-		Clock_Blink_On();
-	} else {
-		Clock_Blink_Off();
-	}
+	//Pulse();
 }
 
 void Nixie_Display::ShowDate(byte day, byte month, byte year){
@@ -118,7 +140,8 @@ void Nixie_Display::ShowDate(byte day, byte month, byte year){
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte3); 	
 	digitalWrite(_C_LatchPin, HIGH);
 	
-	Date_Leds_On();
+	//Pulse();
+	
 }
 
 		

@@ -1,22 +1,29 @@
 /*
-   Morse.h - Library for flashing Morse code.
-   Created by David A. Mellis, November 2, 2007.
-   Released into the public domain.
+   Nixie.h - Library for controlling nixie display.
+   Created by R. de Weerd, October, 2016.
  */
-#ifndef NixieLib_h
-#define NixieLib_h
+#ifndef Nixie_h
+#define Nixie_h
 
 #include "Arduino.h"
+#include "Nixie_Sensor.h"
+
+#define PulsesPerSec 20        				// total pulses send to the display every seccond, used for blinking and screensaver
+#define PulseInterval 1000/PulsesPerSec
+
+#define MaxSensors 2        				// total pulses send to the display every seccond, used for blinking and screensaver
 
 class Nixie_Display
 {
 	public:
 		Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_latchp, byte w_clockp, byte w_datap, byte c_highp, byte c_lowp, byte w_dotp, byte c_minp, byte c_maxp, byte bl_pin, byte hv_pin);
-		void ShowClock(byte hr, byte min, byte sec);
+		void ShowTime(byte hr, byte min, byte sec);
 		void ShowDate(byte day, byte month, byte year);
 		void ShowPressure(int press, byte mmled);
 		void ShowTemp(byte sensor, int temp, byte mmled);
 		void ShowHum(byte sensor, byte hum, byte mmled);
+		
+		void Pulse();
 	
 		void SetupPage(byte _page, int _val);
 		void SetupClock(byte hr, byte min, byte sec, byte _pos, byte changed);
@@ -60,6 +67,8 @@ class Nixie_Display
 		void Leds_On();
 		void Leds_Off();
 		
+		byte PulseCount;
+		
 		byte NightMode;
 		
 		byte day;
@@ -71,6 +80,9 @@ class Nixie_Display
 		byte ScreenSaverActive;
 		byte ScreenSaverFinished;
 		byte DimIntensity;
+		
+		RF_Sensor RFSensor[MaxSensors]; 		//verified
+		Baro_Sensor Baro; 						//verified
 		
 	private:
 		void Randomise();
@@ -110,6 +122,7 @@ class Nixie_Display
 		byte w1,w2,w3,w4,w5,w6;
 		byte ct1,ct2,ct3,ct4,ct5,ct6;
 		byte wt1,wt2,wt3,wt4,wt5;
+		byte _lastPulse;
 		
 };
 
