@@ -7,6 +7,7 @@
 
 #include "Arduino.h"
 #include "Nixie_Sensor.h"
+#include "TimeLib.h"
 
 #define PulsesPerSec 20        				// total pulses send to the display every seccond, used for blinking and screensaver
 #define PulseInterval 1000/PulsesPerSec
@@ -83,6 +84,7 @@ class Nixie_Display
 		
 		RF_Sensor RFSensor[MaxSensors]; 		//verified
 		Baro_Sensor Baro; 						//verified
+		TimeElements Time;
 		
 	private:
 		void Randomise();
