@@ -15,6 +15,10 @@ Nixie_Display::Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_
 	_W_MaxPin = c_maxp;
 	_BL_Pin = bl_pin;
 	_HV_Pin = hv_pin;
+	
+	BackLightDay = 0;
+	BackLightNight = 0;
+	
 	DimStatus = 0;
 	NightMode = 0;
 	PulseCount = 0;
@@ -36,8 +40,9 @@ Nixie_Display::Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_
 	pinMode(_BL_Pin, OUTPUT);
 	pinMode(_HV_Pin, OUTPUT);
 	
-	digitalWrite(_HV_Pin, LOW);
-	analogWrite(_BL_Pin,DimStatus);
+	HV_Off();
+	
+	analogWrite(_BL_Pin,DimStatus); //cleanup needed
 	
 	digitalWrite(_C_HighPin, HIGH);
 	digitalWrite(_C_LowPin, HIGH);
@@ -72,7 +77,7 @@ void Nixie_Display::Pulse(){
 		_lastPulse = PulseCount;
 		if (NightMode == 0){
 			if (ScreenSaverActive == 0){
-				if (_td == 0){
+				if (_TimeDisplay == 0){
 					//Time displayed
 					if (PulseCount < (PulsesPerSec/2)){
 						Clock_Blink_On();
@@ -92,21 +97,21 @@ void Nixie_Display::Pulse(){
 	DimmerPulse();
 }
 	
-void Nixie_Display::ShowTime(byte hr, byte min, byte sec){
-    _td = 0;
+void Nixie_Display::ShowTime(){
+    _TimeDisplay = 0;
 	
 	byte byte1;
 	byte byte2;
 	byte byte3;
 	
-	byte1 = (hr / 10) << 4;
-	byte1 = byte1 | (hr % 10);
+	byte1 = (Time.Hour / 10) << 4;
+	byte1 = byte1 | (Time.Hour % 10);
 
-	byte2 = (min / 10) << 4;
-	byte2 = byte2 | (min % 10);
+	byte2 = (Time.Minute / 10) << 4;
+	byte2 = byte2 | (Time.Minute % 10);
 	
-	byte3 = (sec / 10) << 4;
-	byte3 = byte3 | (sec % 10);
+	byte3 = (Time.Second / 10) << 4;
+	byte3 = byte3 | (Time.Second % 10);
 	
 	digitalWrite(_C_LatchPin, LOW);
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte1); 
@@ -117,19 +122,19 @@ void Nixie_Display::ShowTime(byte hr, byte min, byte sec){
 	//Pulse();
 }
 
-void Nixie_Display::ShowDate(byte day, byte month, byte year){
-    _td = 1;
+void Nixie_Display::ShowDate(){
+    _TimeDisplay = 1;
 	
 	byte byte1;
 	byte byte2;
 	byte byte3;
-	byte yr = (byte) (year - 30);
+	byte yr = (byte) (Time.Year - 30);
 	
-	byte1 = (day / 10) << 4;
-	byte1 = byte1 | (day % 10);
+	byte1 = (Time.Day / 10) << 4;
+	byte1 = byte1 | (Time.Day % 10);
 
-	byte2 = (month / 10) << 4;
-	byte2 = byte2 | (month % 10);
+	byte2 = (Time.Month / 10) << 4;
+	byte2 = byte2 | (Time.Month % 10);
 	
 	byte3 = (yr / 10) << 4;
 	byte3 = byte3 | (yr % 10);
@@ -145,13 +150,17 @@ void Nixie_Display::ShowDate(byte day, byte month, byte year){
 }
 
 		
-void Nixie_Display::ShowTemp(byte sensor, int temp, byte mmled){
+void Nixie_Display::ShowTemp(byte sensor){
 	byte byte1;
 	byte byte2;
 	byte byte3;
 	
 	byte b1,b2,b3,s;
 
+	int temp;
+	
+	temp = (int) (RFSensor[sensor].Temp * 10);
+	
 	if (temp < 0 ){
 		s = 8; // 8 = - sign
 		temp = temp * -1;
@@ -171,8 +180,6 @@ void Nixie_Display::ShowTemp(byte sensor, int temp, byte mmled){
 	temp = temp % 10;
 	b3 = temp;
 
-
-	
 	byte1 = sensor << 4;
 	byte1 = byte1 | 11 ;
 
@@ -182,7 +189,7 @@ void Nixie_Display::ShowTemp(byte sensor, int temp, byte mmled){
 	byte3 = b3 << 4;
 	byte3 = byte3 | s;
 	
-	SetMinMaxLed(mmled);
+	SetMinMaxLed(RFSensor[sensor].TempMinMaxLed);
 	
 	digitalWrite(_W_DotPin, LOW); 
 	
@@ -193,12 +200,15 @@ void Nixie_Display::ShowTemp(byte sensor, int temp, byte mmled){
 	digitalWrite(_W_LatchPin, HIGH);
 }
 
-void Nixie_Display::ShowHum(byte sensor, byte hum, byte mmled){
+void Nixie_Display::ShowHum(byte sensor){
+
 	byte byte1;
 	byte byte2;
 	byte byte3;
 	
 	byte b1,b2;
+
+	int hum = RFSensor[sensor].Hum;
 	
 	if (hum >= 10){
 		b1 = hum / 10;
@@ -208,7 +218,6 @@ void Nixie_Display::ShowHum(byte sensor, byte hum, byte mmled){
 	
 	hum = hum % 10;
 	b2 = hum;	
-
 	
 	byte1 = sensor << 4;
 	byte1 = byte1 | 11 ;
@@ -216,10 +225,9 @@ void Nixie_Display::ShowHum(byte sensor, byte hum, byte mmled){
 	byte2 = b1 << 4;
 	byte2 = byte2 | b2 ;
 	
-	byte3 = 0 << 4;
-	byte3 = byte3 | 2 ; // 2 = % sign
+	byte3 = 2 ; // 2 = % sign
 	
-	SetMinMaxLed(mmled);
+	SetMinMaxLed(RFSensor[sensor].HumMinMaxLed);
 	
 	digitalWrite(_W_DotPin, LOW); 
 	
@@ -233,10 +241,14 @@ void Nixie_Display::ShowHum(byte sensor, byte hum, byte mmled){
 		
 		
 
-void Nixie_Display::ShowPressure(int press, byte mmled){
+void Nixie_Display::ShowPressure(){
+	
+	
 	byte byte1;
 	byte byte2;
 	byte byte3;
+	
+	int press = Baro.Pressure;
 	
 	byte b1,b2,b3,b4,b5;
 	if (press >= 10000){
@@ -265,7 +277,7 @@ void Nixie_Display::ShowPressure(int press, byte mmled){
 	byte3 = byte3 | 9 ; // 9 = pressure sign	
 		
 	
-	SetMinMaxLed(mmled);
+	SetMinMaxLed(Baro.MinMaxLed);
 	
 	digitalWrite(_W_DotPin, LOW); 
 	digitalWrite(_W_LatchPin, LOW);
@@ -349,7 +361,7 @@ void Nixie_Display::NightmodeEnd(){
 
 void Nixie_Display::C_Blink_On(){
 	if (NightMode != 1){
-		switch (_td){
+		switch (_TimeDisplay){
 			case 0:
 				digitalWrite(_C_HighPin, LOW);
 				digitalWrite(_C_LowPin, LOW);
@@ -474,7 +486,7 @@ void Nixie_Display::ScreenSaverStart(byte duration, byte hr, byte min, byte sec,
 	_LastScrSub = millis();
 	_ScrStep = 0;
 	
-	_td = 2;
+	_TimeDisplay = 2;
 }
 
 void Nixie_Display::Randomise(){
@@ -508,7 +520,7 @@ void Nixie_Display::ScreenSaverPulse(){
 				if (_ScrStep > 0) {
 					_ScrStep--;
 				} else {
-					_td = 0;
+					_TimeDisplay = 0;
 				}
 				break;
 		}
@@ -823,9 +835,12 @@ void Nixie_Display::Disp_Test(){
 	byte bl_val = 0;
 	unsigned long delay_start;
 	
+	
+	HV_Off();
 	ShowClock_Dir(11,11,11,11,11,11);
 	ShowWeather_Dir(11,11,11,11,11,11);	
-
+	HV_On();
+	
 	DimmerStart(255,7);
 	
 	while (DimActive > 0){

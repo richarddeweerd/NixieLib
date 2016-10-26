@@ -18,11 +18,25 @@ class Nixie_Display
 {
 	public:
 		Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_latchp, byte w_clockp, byte w_datap, byte c_highp, byte c_lowp, byte w_dotp, byte c_minp, byte c_maxp, byte bl_pin, byte hv_pin);
-		void ShowTime(byte hr, byte min, byte sec);
-		void ShowDate(byte day, byte month, byte year);
-		void ShowPressure(int press, byte mmled);
-		void ShowTemp(byte sensor, int temp, byte mmled);
-		void ShowHum(byte sensor, byte hum, byte mmled);
+		void ShowTime();
+		void ShowDate();
+		void ShowPressure();
+		void ShowTemp(byte sensor);
+		void ShowHum(byte sensor);
+		
+		RF_Sensor RFSensor[MaxSensors];
+		Baro_Sensor Baro;
+		TimeElements Time;
+		byte BackLightDay;
+		byte BackLightNight;
+		
+		//======================================================== ^^^^^ Verified ^^^^^ ========================================================
+		
+		
+		
+		
+		
+		
 		
 		void Pulse();
 	
@@ -82,15 +96,10 @@ class Nixie_Display
 		byte ScreenSaverFinished;
 		byte DimIntensity;
 		
-		RF_Sensor RFSensor[MaxSensors]; 		//verified
-		Baro_Sensor Baro; 						//verified
-		TimeElements Time;
+
 		
 	private:
-		void Randomise();
-		byte _scrnsvr_stepcounter;
-		byte _scrnsvr_step;
-		byte _td;
+
 		byte _C_LatchPin;
 		byte _C_ClockPin;
 		byte _C_DataPin;
@@ -104,6 +113,15 @@ class Nixie_Display
 		byte _W_MaxPin;
 		byte _BL_Pin;
 		byte _HV_Pin;
+	
+		byte _TimeDisplay;
+
+		//======================================================== ^^^^^ Verified ^^^^^ ========================================================
+
+		void Randomise();
+		byte _scrnsvr_stepcounter;
+		byte _scrnsvr_step;
+
 		
 		byte _DimTarget;
 		byte _DimSpeed;
