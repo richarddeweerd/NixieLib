@@ -18,15 +18,20 @@ class Nixie_Display
 {
 	public:
 		Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_latchp, byte w_clockp, byte w_datap, byte c_highp, byte c_lowp, byte w_dotp, byte c_minp, byte c_maxp, byte bl_pin, byte hv_pin);
+
 		void ShowTime();
 		void ShowDate();
 		void ShowPressure();
 		void ShowTemp(byte sensor);
 		void ShowHum(byte sensor);
 		
+		void SetupClock(byte _pos,  byte chng);
+		void ExitSetup();
+			
 		RF_Sensor RFSensor[MaxSensors];
 		Baro_Sensor Baro;
 		TimeElements Time;
+
 		byte BackLightDay;
 		byte BackLightNight;
 		
@@ -41,8 +46,6 @@ class Nixie_Display
 		void Pulse();
 	
 		void SetupPage(byte _page, int _val);
-		void SetupClock(byte hr, byte min, byte sec, byte _pos, byte changed);
-		void SetupDate(byte day, byte mon, byte year, byte _pos, byte changed);
 		
 		void SetMinMaxLed(byte MinMaxL);
 		
@@ -115,7 +118,9 @@ class Nixie_Display
 		byte _HV_Pin;
 	
 		byte _TimeDisplay;
-
+		byte _BlinkPos;
+		byte _ValChanged;
+		
 		//======================================================== ^^^^^ Verified ^^^^^ ========================================================
 
 		void Randomise();

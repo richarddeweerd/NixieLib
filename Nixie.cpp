@@ -19,6 +19,9 @@ Nixie_Display::Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_
 	BackLightDay = 0;
 	BackLightNight = 0;
 	
+	_BlinkPos = 0;
+	_ValChanged = 0;
+	
 	DimStatus = 0;
 	NightMode = 0;
 	PulseCount = 0;
@@ -75,6 +78,11 @@ void Nixie_Display::SetMinMaxLed(byte MinMaxL){
 void Nixie_Display::Pulse(){
 	if (PulseCount != _lastPulse){
 		_lastPulse = PulseCount;
+		if (_ValChanged > 0){
+			_ValChanged--;
+		}
+					
+
 		if (NightMode == 0){
 			if (ScreenSaverActive == 0){
 				if (_TimeDisplay == 0){
@@ -113,13 +121,30 @@ void Nixie_Display::ShowTime(){
 	byte3 = (Time.Second / 10) << 4;
 	byte3 = byte3 | (Time.Second % 10);
 	
+	if (_BlinkPos > 0){
+		//edit mode
+		if (_ValChanged == 0){
+			if (PulseCount < (PulsesPerSec/2)){			
+				switch (_BlinkPos){
+					case 1:
+						byte1=0xBB;
+						break;
+					case 2:
+						byte2=0xBB;
+						break;
+					case 3:
+						byte3=0xBB;
+						break;
+				}							
+			} 
+		} 
+	}
+	
 	digitalWrite(_C_LatchPin, LOW);
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte1); 
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte2); 
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte3); 	
 	digitalWrite(_C_LatchPin, HIGH);
-	
-	//Pulse();
 }
 
 void Nixie_Display::ShowDate(){
@@ -138,16 +163,34 @@ void Nixie_Display::ShowDate(){
 	
 	byte3 = (yr / 10) << 4;
 	byte3 = byte3 | (yr % 10);
+
+	if (_BlinkPos > 0){
+		//edit mode
+		if (_ValChanged == 0){
+			if (PulseCount < (PulsesPerSec/2)){			
+				switch (_BlinkPos){
+					case 4:
+						byte1=0xBB;
+						break;
+					case 5:
+						byte2=0xBB;
+						break;
+					case 6:
+						byte3=0xBB;
+						break;
+				}							
+			} 
+		} 
+	}
 	
 	digitalWrite(_C_LatchPin, LOW);
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte1); 
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte2); 
 	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte3); 	
-	digitalWrite(_C_LatchPin, HIGH);
-	
-	//Pulse();
-	
+	digitalWrite(_C_LatchPin, HIGH);	
 }
+
+
 
 		
 void Nixie_Display::ShowTemp(byte sensor){
@@ -285,6 +328,34 @@ void Nixie_Display::ShowPressure(){
 	shiftOut(_W_DataPin, _W_ClockPin, MSBFIRST, byte2); 
 	shiftOut(_W_DataPin, _W_ClockPin, MSBFIRST, byte3); 	
 	digitalWrite(_W_LatchPin, HIGH);
+}
+
+
+void Nixie_Display::SetupPage(byte _page, int _val){
+	ShowClock_Dir((_page / 10),(_page %10),11,11,11,11);
+	ShowWeather_Dir(11,11,11,11,11,11);	
+}
+
+void Nixie_Display::SetupClock(byte _pos, byte chng){
+	if (chng == 1){
+		_ValChanged = 20;	
+	}
+	_BlinkPos =_pos;	
+	if (_pos < 4) {
+		ShowTime();	
+	} else {
+		ShowDate();	
+	}
+	
+	ShowWeather_Dir(11,11,11,11,11,11);	
+	digitalWrite(_W_DotPin, HIGH);
+	digitalWrite(_W_MinPin, HIGH);
+	digitalWrite(_W_MaxPin, HIGH);
+}
+
+void Nixie_Display::ExitSetup(){	
+	_BlinkPos = 0;
+	_ValChanged = 0;
 }
 
 
@@ -740,95 +811,7 @@ void Nixie_Display::ScreenSaverSecPulse(byte hr, byte min, byte sec, int pressur
 
 }
 
-void Nixie_Display::SetupPage(byte _page, int _val){
-	ShowClock_Dir((_page / 10),(_page %10),11,11,11,11);
-	ShowWeather_Dir(11,11,11,11,11,11);	
-}
 
-void Nixie_Display::SetupClock(byte hr, byte min, byte sec, byte _pos, byte _changed){
-	byte byte1;
-	byte byte2;
-	byte byte3;
-
-	if (_changed == 1) {
-		_Setup_NoBlink = 5;
-	}
-	
-	if ((_pos == 1) && ( _Sec_Stat <= 1) && (_Setup_NoBlink == 0)){
-		byte1 = 0xBB;
-	} else {
-		byte1 = (hr / 10) << 4;
-		byte1 = byte1 | (hr % 10);
-	}
-	if ((_pos == 2) && ( _Sec_Stat <= 1) && (_Setup_NoBlink == 0)){
-		byte2 = 0xBB;
-	} else {
-		byte2 = (min / 10) << 4;
-		byte2 = byte2 | (min % 10);
-	}
-	
-	if ((_pos == 3) && ( _Sec_Stat <= 1) && (_Setup_NoBlink == 0)){
-		byte3 = 0xBB;
-	} else {
-		byte3 = (sec / 10) << 4;
-		byte3 = byte3 | (sec % 10);
-	}
-	
-	digitalWrite(_C_LatchPin, LOW);
-	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte1); 
-	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte2); 
-	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte3); 	
-	digitalWrite(_C_LatchPin, HIGH);	
-	
-	if (_Sec_Stat <= 1){
-		Clock_Blink_On();
-	} else {
-		Clock_Blink_Off();
-	}
-}
-
-void Nixie_Display::SetupDate(byte day, byte mon, byte year, byte _pos, byte _changed){
-	byte byte1;
-	byte byte2;
-	byte byte3;
-	byte yr = (byte) (year - 30);
-	
-	if (_changed == 1) {
-		_Setup_NoBlink = 5;
-	}
-	
-	if ((_pos == 1) && ( _Sec_Stat <= 1) && (_Setup_NoBlink == 0)){
-		byte1 = 0xBB;
-	} else {
-		byte1 = (day / 10) << 4;
-		byte1 = byte1 | (day % 10);
-	}
-	if ((_pos == 2) && ( _Sec_Stat <= 1) && (_Setup_NoBlink == 0)){
-		byte2 = 0xBB;
-	} else {
-		byte2 = (mon / 10) << 4;
-		byte2 = byte2 | (mon % 10);
-	}
-	
-	if ((_pos == 3) && ( _Sec_Stat <= 1) && (_Setup_NoBlink == 0)){
-		byte3 = 0xBB;
-	} else {
-		byte3 = (yr / 10) << 4;
-		byte3 = byte3 | (yr % 10);
-	}
-	
-	digitalWrite(_C_LatchPin, LOW);
-	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte1); 
-	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte2); 
-	shiftOut(_C_DataPin, _C_ClockPin, MSBFIRST, byte3); 	
-	digitalWrite(_C_LatchPin, HIGH);	
-	
-	if (_Sec_Stat <= 1){
-		Date_Leds_On();
-	} else {
-		Date_Leds_Off();
-	}
-}
 
 
 void Nixie_Display::Disp_Test(){
