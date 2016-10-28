@@ -54,6 +54,41 @@ Nixie_Display::Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_
 	digitalWrite(_W_MaxPin, HIGH);
 }
 
+void Nixie_Display::HV_On(){
+	digitalWrite(_HV_Pin, HIGH);
+}
+
+void Nixie_Display::HV_Off(){
+	digitalWrite(_HV_Pin, LOW);
+}
+
+
+void Nixie_Display::Leds_On(){
+	digitalWrite(_C_HighPin, LOW);
+	digitalWrite(_C_LowPin, LOW);
+	digitalWrite(_W_DotPin, LOW);
+	digitalWrite(_W_MinPin, LOW);
+	digitalWrite(_W_MaxPin, LOW);
+}
+
+void Nixie_Display::Leds_Off(){
+	digitalWrite(_C_HighPin, HIGH);
+	digitalWrite(_C_LowPin, HIGH);
+	digitalWrite(_W_DotPin, HIGH);
+	digitalWrite(_W_MinPin, HIGH);
+	digitalWrite(_W_MaxPin, HIGH);
+}
+
+void Nixie_Display::Date_Leds_On(){
+	digitalWrite(_C_HighPin, HIGH);
+	digitalWrite(_C_LowPin, LOW);
+}
+void Nixie_Display::Date_Leds_Off(){
+	digitalWrite(_C_HighPin, HIGH);
+	digitalWrite(_C_LowPin, HIGH);
+}
+
+
 void Nixie_Display::SetMinMaxLed(byte MinMaxL){
 	switch (MinMaxL){
 		case 0:
@@ -85,20 +120,26 @@ void Nixie_Display::Pulse(){
 
 		if (NightMode == 0){
 			if (ScreenSaverActive == 0){
-				if (_TimeDisplay == 0){
-					//Time displayed
-					if (PulseCount < (PulsesPerSec/2)){
-						Clock_Blink_On();
-					} else {
-						Clock_Blink_Off();
-					}
-				} else {
-					//date is displayed
-					Date_Leds_On();
+				switch (_TimeDisplay){
+					case 1:
+						//Time displayed
+						if (PulseCount < (PulsesPerSec/2)){
+							Clock_Blink_On();
+						} else {
+							Clock_Blink_Off();
+						}					
+						break;
+					case 2:
+						Date_Leds_On();
+						break;
 				}
 
 			} else {
-				
+				ScreenSaverPulse();
+				_ScrStepCounter--;
+				if (_ScrStepCounter == 0){
+					ScreenSaverActive = 0;
+				}
 			}
 		}
 	}
@@ -106,7 +147,7 @@ void Nixie_Display::Pulse(){
 }
 	
 void Nixie_Display::ShowTime(){
-    _TimeDisplay = 0;
+    _TimeDisplay = 1;
 	
 	byte byte1;
 	byte byte2;
@@ -148,7 +189,7 @@ void Nixie_Display::ShowTime(){
 }
 
 void Nixie_Display::ShowDate(){
-    _TimeDisplay = 1;
+    _TimeDisplay = 2;
 	
 	byte byte1;
 	byte byte2;
@@ -332,8 +373,48 @@ void Nixie_Display::ShowPressure(){
 
 
 void Nixie_Display::SetupPage(byte _page, int _val){
+	byte s;
+	byte b1,b2;
+	_TimeDisplay = 0;
+	if (_val < 0 ){
+		s = 8; // 8 = - sign
+		_val = _val * -1;
+	} else {
+		s = 7; // 7 = - sign
+	}
+	b1 = _val / 100;
+	if (b1 == 0){
+		b1 = 11;
+	}
+	_val = _val % 100;
+	b2 = _val / 10;
+	if (b2 == 0){
+		b2 = 11;
+	}
+	
 	ShowClock_Dir((_page / 10),(_page %10),11,11,11,11);
-	ShowWeather_Dir(11,11,11,11,11,11);	
+	ShowWeather_Dir(11,b1,b2,_val %10,11,s);
+	Leds_Off();
+}
+
+void Nixie_Display::SetupPage(byte _page, byte _val){
+	byte b1,b2;
+	_TimeDisplay = 0;
+	
+	b1 = _val / 100;
+	if (b1 == 0){
+		b1 = 11;
+	}
+	_val = _val % 100;
+	b2 = _val / 10;
+	if (b2 == 0){
+		b2 = 11;
+	}
+	
+	ShowClock_Dir((_page / 10),(_page %10),11,11,11,11);
+	ShowWeather_Dir(11,b1,b2,_val %10,11,11);
+	
+	Leds_Off();
 }
 
 void Nixie_Display::SetupClock(byte _pos, byte chng){
@@ -353,10 +434,28 @@ void Nixie_Display::SetupClock(byte _pos, byte chng){
 	digitalWrite(_W_MaxPin, HIGH);
 }
 
+void Nixie_Display::ShowCodeVersion(long ver){
+	byte b1,b2,b3,b4,b5;
+	Date_Leds_On();
+	b1 = ver / 100000;
+	ver = ver % 100000;
+	b2 = ver / 10000;
+	ver = ver % 10000;
+	b3 = ver / 1000;
+	ver = ver % 1000;
+	b4 = ver / 100;
+	ver = ver % 100;
+	b5 = ver / 10;
+	ver = ver % 10;
+	ShowClock_Dir(b1,b2,b3,b4,b5,(byte)ver);
+	ShowWeather_Dir(11,11,11,11,11,11);	
+}
+
 void Nixie_Display::ExitSetup(){	
 	_BlinkPos = 0;
 	_ValChanged = 0;
 }
+
 
 
 
@@ -405,19 +504,11 @@ void Nixie_Display::ShowWeather_Dir(byte d1, byte d2, byte d3, byte d4, byte d5,
 	digitalWrite(_W_LatchPin, HIGH);
 }
 
-void Nixie_Display::HV_On(){
-	digitalWrite(_HV_Pin, HIGH);
-}
-
-void Nixie_Display::HV_Off(){
-	digitalWrite(_HV_Pin, LOW);
-}
-
 
 void Nixie_Display::NightmodeStart(){
   NightMode = 1;
   HV_Off();
-  DimmerStart(10,25);
+  DimmerStart(BackLightNight,25);
   Leds_Off();
 }
 
@@ -427,7 +518,7 @@ void Nixie_Display::NightmodeWake(){
 void Nixie_Display::NightmodeEnd(){
   NightMode = 0;
   HV_On();
-  DimmerStart(DimIntensity,25);
+  DimmerStart(BackLightDay,25);
 }
 
 void Nixie_Display::C_Blink_On(){
@@ -459,14 +550,7 @@ void Nixie_Display::Clock_Blink_Off(){
 	digitalWrite(_C_LowPin, HIGH);
 }
 
-void Nixie_Display::Date_Leds_On(){
-	digitalWrite(_C_HighPin, HIGH);
-	digitalWrite(_C_LowPin, LOW);
-}
-void Nixie_Display::Date_Leds_Off(){
-	digitalWrite(_C_HighPin, HIGH);
-	digitalWrite(_C_LowPin, HIGH);
-}
+
 
 
 
@@ -486,21 +570,7 @@ void Nixie_Display::C_Blink_Off(){
 	digitalWrite(_C_LowPin, HIGH);
 }
 
-void Nixie_Display::Leds_On(){
-	digitalWrite(_C_HighPin, LOW);
-	digitalWrite(_C_LowPin, LOW);
-	digitalWrite(_W_DotPin, LOW);
-	digitalWrite(_W_MinPin, LOW);
-	digitalWrite(_W_MaxPin, LOW);
-}
 
-void Nixie_Display::Leds_Off(){
-	digitalWrite(_C_HighPin, HIGH);
-	digitalWrite(_C_LowPin, HIGH);
-	digitalWrite(_W_DotPin, HIGH);
-	digitalWrite(_W_MinPin, HIGH);
-	digitalWrite(_W_MaxPin, HIGH);
-}
 
 void Nixie_Display::DimmerStart(byte target, byte speed){
 	_DimTarget = target;
@@ -528,288 +598,188 @@ void Nixie_Display::DimmerPulse(){
 	}
 }
 
-void Nixie_Display::ScreenSaverStart(byte duration, byte hr, byte min, byte sec, int pressure){
-	
-	ct1 = hr / 10;
-	ct2 = hr % 10;
-	ct3 = min / 10;
-	ct4 = min % 10;
-	ct5 = sec / 10;
-	ct6 = sec % 10;
-	
-	wt1 = pressure / 10000;
-	pressure = pressure % 10000;
-	wt2 = pressure / 1000;
-	pressure = pressure % 1000;
-	wt3 = pressure / 100;
-	pressure = pressure % 100;
-	wt4 = pressure / 10;
-	pressure = pressure % 10;
-	wt5 = pressure;	
-	
-	//ShowClock_Dir(11,11,11,11,11,11);
-	//ShowWeather_Dir(11,11,11,11,11,11);	
-	DimmerStart(0,8);
-	_ScreenSaverDuration = duration;
-	ScreenSaverActive = 1;
-	_ScreenSaverCounter = 0;
-	_LastScr = millis();
-	_LastScrSub = millis();
-	_ScrStep = 0;
-	
-	_TimeDisplay = 2;
-}
-
-void Nixie_Display::Randomise(){
-	c1=random(0, 10);
-	c2=random(0, 10);
-	c3=random(0, 10);
-	c4=random(0, 10);
-	c5=random(0, 10);
-	c6=random(0, 10);
-	w1=random(0, 10);
-	w2=random(0, 10);
-	w3=random(0, 10);
-	w4=random(0, 10);
-	w5=random(0, 10);
-	w6=random(0, 10);
-}
-
 void Nixie_Display::ScreenSaverPulse(){
-
-	if (((millis() - _LastScr) >= 50)|| (millis() < _LastScr)){
-		_LastScr += 50;
-		Randomise();
-		switch (ScreenSaverActive){
+	byte clearspeed = 1;
+	byte scrspeed = 2;
+	int pressure = Baro.Pressure;
+	if ((_ScrSteps - _ScrStepCounter)<=21){
+		//Clear screen
+		int i = (_ScrSteps - _ScrStepCounter)/clearspeed;
+		switch (i){			
+			case 0:
+				c5 = Time.Second / 10;
+				c6 = 11;
+				w1 = 11;
+				break;
 			case 1:
-				_ScrStep++;
+				c5 = 11;
+				w2 = 11;
+
 				break;
 			case 2:
-				_ScrStep = 12;
+				c4 = 11;
+				w3 = 11;
 				break;
 			case 3:
-				if (_ScrStep > 0) {
-					_ScrStep--;
-				} else {
-					_TimeDisplay = 0;
-				}
+				c3 = 11;
+				w4 = 11;
+				break;
+			case 4:
+				c2 = 11;
+				w5 = 11;
+				break;
+			case 5:
+				c1 = 11;
+				w6 = 11;
 				break;
 		}
-	}
-	
+	} 
+	else 
+	{
+		if (_ScrStepCounter<=20){
+			//Fill screen
+			int i = _ScrStepCounter/clearspeed;
 
-	if (_ScreenSaverCounter < 4){
-		//Begin of screensaver
-		ScreenSaverActive = 1;
-		_DimStrt=1;
-		_DimEnd=0;
-	} else {
-		if ((_ScreenSaverDuration - _ScreenSaverCounter) < 3){
-			//End of screensaver
-			if (ScreenSaverActive == 2){
-				DimmerStart(DimIntensity,8);
-				ScreenSaverActive = 3;
-				//_LastScr = millis();
-				_ScrStep = 12;	
-			}
-		} else {
-			if (((_ScreenSaverDuration - _ScreenSaverCounter) < 5)&&(_DimEnd==1)){
-				DimmerStart(0,3);
-				_DimEnd=0;
-			} else {
-				
-				if ((DimStatus == 0)&&(_DimStrt==1)){
-					DimmerStart(DimIntensity,3);
-					_DimStrt=0;
-					_DimEnd=1;
-				}
-				if ((DimStatus >= DimIntensity)&&(_DimStrt==0)){
-					DimmerStart(0,3);
-					_DimStrt=1;
-				}
-			}
-			ScreenSaverActive = 2;
+			switch (i){
+				case 5:
+					c1 = 11;
+					c2 = 11;
+					c3 = 11;
+					c4 = 11;
+					c5 = 11;
+					c6 = 11;
+					w1 = 11;
+					w2 = 11;
+					w3 = 11;
+					w4 = 11;
+					w5 = 11;
+					w6 = 11;
+					break;
+				case 4:
+					c1 = Time.Hour / 10;
+					w6 = 9;
+					break;
+				case 3:
+					c2 = Time.Hour % 10;
+					w5 = pressure;	
+					break;
+				case 2:
+					c3 = Time.Minute / 10;
+					pressure = pressure % 100;
+					w4 = pressure / 10;
+					break;
+				case 1:
+					c4 = Time.Minute % 10;
+					pressure = pressure % 1000;
+					w3 = pressure / 100;
+					break;
+				case 0:
+					c5 = Time.Second / 10;
+					pressure = pressure % 10000;
+					w2 = pressure / 1000;
+					break;
+				default:
+					c1 = 11;
+					c2 = 11;
+					c3 = 11;
+					c4 = 11;
+					c5 = 11;
+					c6 = 11;
+					w1 = 11;
+					w2 = 11;
+					w3 = 11;
+					w4 = 11;
+					w5 = 11;
+					w6 = 11;					
+			}		
 		}
+		else 
+		{			
+			//middle
+			int i = ((_ScrStepCounter-20)%(scrspeed*6))/scrspeed;
+			switch (i){
+
+				case 5:
+					c6 = 11;
+					w1 = 11;
+					c1 = Randomise(c1);
+					w6 = Randomise(w6);
+					break;
+				case 4:
+					c1 = 11;
+					w6 = 11;				
+					c2 = Randomise(c2);
+					w5 = Randomise(w5);
+					break;
+				case 3:
+					c2 = 11;
+					w5 = 11;
+					c3 = Randomise(c3);
+					w4 = Randomise(w4);
+					break;
+				case 2:
+					c3 = 11;
+					w4 = 11;
+					c4 = Randomise(c4);
+					w3 = Randomise(w3);
+					break;
+				case 1:
+					c4 = 11;
+					w3 = 11;
+					c5 = Randomise(c5);
+					w2 = Randomise(w2);
+					break;
+				case 0:
+					c5 = 11;
+					w2 = 11;
+					c6 = Randomise(c6);
+					w1 = Randomise(w1);
+					break;					
+			}					
+		}		
 	} 
+
 	
-	switch (_ScrStep){
-	  case 0:
-		c1=ct1;
-		c2=ct2;
-		c3=ct3;
-		c4=ct4;
-		c5=ct5;
-		c6=ct6;
-		w1=wt1;
-		w2=wt2;
-		w3=wt3;
-		w4=wt4;
-		w5=wt5;
-		w6=9;
-		break;
-	  case 1:
-		c1=ct1;
-		c2=ct2;
-		c3=ct3;
-		c4=ct4;
-		c5=ct5;
-		c6=11;
-		w1=11;
-		w2=wt2;
-		w3=wt3;
-		w4=wt4;
-		w5=wt5;
-		w6=9;
-		break; 
-	  case 2:
-		c1=ct1;
-		c2=ct2;
-		c3=ct3;
-		c4=ct4;
-		c5=11;
-		c6=11;
-		w1=11;
-		w2=11;
-		w3=wt3;
-		w4=wt4;
-		w5=wt5;
-		w6=9;
-		break;
-	  case 3:
-		c1=ct1;
-		c2=ct2;
-		c3=ct3;
-		c4=11;
-		c5=11;
-		c6=11;
-		w1=11;
-		w2=11;
-		w3=11;
-		w4=wt4;
-		w5=wt5;
-		w6=9;
-		digitalWrite(_W_DotPin, LOW);
-		break; 
-	  case 4:
-		c1=ct1;
-		c2=ct2;
-		c3=11;
-		c4=11;
-		c5=11;
-		c6=11;
-		w1=11;
-		w2=11;
-		w3=11;
-		w4=11;
-		w5=wt5;
-		w6=9;
-		digitalWrite(_W_DotPin, HIGH);
-		break;
-	  case 5:
-		c1=ct1;
-		c2=11;
-		c3=11;
-		c4=11;
-		c5=11;
-		c6=11;
-		w1=11;
-		w2=11;
-		w3=11;
-		w4=11;
-		w5=11;
-		w6=9;
-		break; 
-	  case 6:
-		c1=11;
-		c2=11;
-		c3=11;
-		c4=11;
-		c5=11;
-		c6=11;
-		w1=11;
-		w2=11;
-		w3=11;
-		w4=11;
-		w5=11;
-		w6=11;
-		break;
-	  case 7:
-		c1=11;
-		c2=11;
-		c3=11;
-		c4=11;
-		c5=11;
-		w2=11;
-		w3=11;
-		w4=11;
-		w5=11;
-		w6=11;
-		break;
-	  case 8:
-		c1=11;
-		c2=11;
-		c3=11;
-		c4=11;
-		w3=11;
-		w4=11;
-		w5=11;
-		w6=11;
-		break;
-	  case 9:
-		c1=11;
-		c2=11;
-		c3=11;
-		w4=11;
-		w5=11;
-		w6=11;
-		break;
-	  case 10:
-		c1=11;
-		c2=11;
-		w5=11;
-		w6=11;
-		break;
-	  case 11:
-		c1=11;
-		w6=11;
-		break;
-	  default:
-		break;
-	} 
 	ShowClock_Dir(c1,c2,c3,c4,c5,c6);
-	ShowWeather_Dir(w1,w2,w3,w4,w5,w6);
-	
-	DimmerPulse();
-	
-	if (_ScreenSaverCounter == _ScreenSaverDuration + 1){
-		ScreenSaverFinished = 1;
-	}
+	ShowWeather_Dir(w1,w2,w3,w4,w5,w6);	
 }
-void Nixie_Display::ScreenSaverSecPulse(byte hr, byte min, byte sec, int pressure){
+
+
+void Nixie_Display::ScreenSaverStart(byte duration){
+	_ScrSteps = (duration * 20)+1;
+	_ScrStepCounter = _ScrSteps;
+	ScreenSaverActive = 1;
+	Leds_Off();
+	  
+	int pressure = Baro.Pressure;
 	
-	ct1 = hr / 10;
-	ct2 = hr % 10;
-	ct3 = min / 10;
-	ct4 = min % 10;
-	ct5 = sec / 10;
-	ct6 = sec % 10;
+	c1 = Time.Hour / 10;
+	c2 = Time.Hour % 10;
+	c3 = Time.Minute / 10;
+	c4 = Time.Minute % 10;
+	c5 = Time.Second / 10;
+	c6 = Time.Second % 10;
 	
-	wt1 = pressure / 10000;
+	w1 = pressure / 10000;
 	pressure = pressure % 10000;
-	wt2 = pressure / 1000;
+	w2 = pressure / 1000;
 	pressure = pressure % 1000;
-	wt3 = pressure / 100;
+	w3 = pressure / 100;
 	pressure = pressure % 100;
-	wt4 = pressure / 10;
+	w4 = pressure / 10;
 	pressure = pressure % 10;
-	wt5 = pressure;	
-
-
-	
-	_ScreenSaverCounter++;
-	_ScreenSaverPulse = 1;
-
+	w5 = pressure;	
+	w6 = 9;
 }
+
+byte Nixie_Display::Randomise(byte x){
+	byte b = random(0, 9);
+	if (b >= x){
+		b++;
+	}
+	return b;
+}
+
 
 
 

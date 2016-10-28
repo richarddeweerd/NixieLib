@@ -19,15 +19,30 @@ class Nixie_Display
 	public:
 		Nixie_Display(byte c_latchp, byte c_clockp, byte c_datap, byte w_latchp, byte w_clockp, byte w_datap, byte c_highp, byte c_lowp, byte w_dotp, byte c_minp, byte c_maxp, byte bl_pin, byte hv_pin);
 
+		void HV_On();
+		void HV_Off();
+		
+		void Date_Leds_On();
+		void Date_Leds_Off();
+		
+		void Leds_On();
+		void Leds_Off();
+		
 		void ShowTime();
 		void ShowDate();
 		void ShowPressure();
 		void ShowTemp(byte sensor);
 		void ShowHum(byte sensor);
 		
+		void ShowCodeVersion(long ver);
+		
 		void SetupClock(byte _pos,  byte chng);
+		void SetupPage(byte _page, int _val);
+		void SetupPage(byte _page, byte _val);
 		void ExitSetup();
 			
+		void ScreenSaverStart(byte duration);
+		
 		RF_Sensor RFSensor[MaxSensors];
 		Baro_Sensor Baro;
 		TimeElements Time;
@@ -45,7 +60,7 @@ class Nixie_Display
 		
 		void Pulse();
 	
-		void SetupPage(byte _page, int _val);
+
 		
 		void SetMinMaxLed(byte MinMaxL);
 		
@@ -63,13 +78,11 @@ class Nixie_Display
 		void NightmodeWake();
 		void NightmodeEnd();
 		
-		void HV_On();
-		void HV_Off();
+
 		
-		void ScreenSaverStart(byte duration, byte hr, byte min, byte sec, int pressure);
 		
-		void ScreenSaverPulse();
-		void ScreenSaverSecPulse(byte hr, byte min, byte sec, int pressure);
+		
+		//void ScreenSaverSecPulse(byte hr, byte min, byte sec, int pressure);
 		
 		void Disp_Test();
 
@@ -79,11 +92,7 @@ class Nixie_Display
 		void Clock_Blink_On();
 		void Clock_Blink_Off();
 		
-		void Date_Leds_On();
-		void Date_Leds_Off();
-		
-		void Leds_On();
-		void Leds_Off();
+
 		
 		byte PulseCount;
 		
@@ -103,6 +112,10 @@ class Nixie_Display
 		
 	private:
 
+		void ScreenSaverPulse();
+		byte Randomise(byte x);
+
+		
 		byte _C_LatchPin;
 		byte _C_ClockPin;
 		byte _C_DataPin;
@@ -121,11 +134,17 @@ class Nixie_Display
 		byte _BlinkPos;
 		byte _ValChanged;
 		
-		//======================================================== ^^^^^ Verified ^^^^^ ========================================================
+		byte _lastPulse;
 
-		void Randomise();
-		byte _scrnsvr_stepcounter;
-		byte _scrnsvr_step;
+		int _ScrSteps;
+		int _ScrStepCounter;
+
+		byte c1,c2,c3,c4,c5,c6;
+		byte w1,w2,w3,w4,w5,w6;
+
+
+		
+		//======================================================== ^^^^^ Verified ^^^^^ ========================================================
 
 		
 		byte _DimTarget;
@@ -135,7 +154,7 @@ class Nixie_Display
 		byte _ScreenSaverCounter;
 		byte _ScreenSaverDuration;
 		byte _ScreenSaverPulse;
-		byte _ScrStep;
+		
 		
 		byte _Sec_Stat;
 		byte _Setup_NoBlink;
@@ -143,11 +162,6 @@ class Nixie_Display
 		unsigned long _LastScr;
 		unsigned long _LastScrSub;
 		
-		byte c1,c2,c3,c4,c5,c6;
-		byte w1,w2,w3,w4,w5,w6;
-		byte ct1,ct2,ct3,ct4,ct5,ct6;
-		byte wt1,wt2,wt3,wt4,wt5;
-		byte _lastPulse;
 		
 };
 
