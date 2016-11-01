@@ -4,85 +4,67 @@
 RF_Sensor::RF_Sensor(){
 }
 
-void RF_Sensor::SetTemp(float tmp, unsigned long tm){
-	Temp = tmp;
-	if (_NewTemp == false){
-		if (tmp < TempMin){
-			TempMin = tmp;
-			TempMin_T = tm;
-		} else {	
-			if (tmp > TempMax){
-				TempMax = tmp;
-				TempMax_T = tm;
-			}
-		}
-		if (tmp == TempMin){
-			TempMinMaxLed=1;
-		} else {
-			TempMinMaxLed=0;
-		} 
-		if (tmp == TempMax){
-			TempMinMaxLed +=2;
-		} 
-	} else {
-		TempMin = tmp;
-		TempMax = tmp;
-		TempMin_T = tm;
-		TempMax_T = tm;
-		_NewTemp = false;
-	}
+void RF_Sensor::SetValues(int temp, byte hm, bool Bat, unsigned long tm){
+	BatWarn = Bat;	
 	
-	//SetDewPoint();
-}
+	Temp = temp;
 
-void RF_Sensor::SetHum(byte hm, unsigned long tm){
-	if (hm==100){
-		hm=99;
-	}
-	Hum = hm;
-	if (_NewHum == false){
-		if (hm < HumMin){
-			HumMin = hm;
-			HumMin_T = tm;
-		} else {	
-			if (hm > HumMax){
-				HumMax = hm;
-				HumMax_T = tm;
-			}
+	if (temp < TempMin){
+		TempMin = temp;
+		TempMin_T = tm;
+	} else {	
+		if (temp > TempMax){
+			TempMax = temp;
+			TempMax_T = tm;
 		}
-		if (hm == HumMin){
-			HumMinMaxLed=1;
-		} else {
-			HumMinMaxLed=0;
-		} 
-		if (hm == HumMax){
-			HumMinMaxLed +=2;
-		} 
-	} else {
-		HumMin = hm;
-		HumMax = hm;
-		HumMin_T = tm;
-		HumMax_T = tm;
-		_NewHum = false;
 	}
+	if (temp == TempMin){
+		TempMinMaxLed=1;
+	} else {
+		TempMinMaxLed=0;
+	} 
+	if (temp == TempMax){
+		TempMinMaxLed +=2;
+	} 
+	
 
-
-		
-	//SetDewPoint();
+	Hum = hm;
+	if (hm < HumMin){
+		HumMin = hm;
+		HumMin_T = tm;
+	} else {	
+		if (hm > HumMax){
+			HumMax = hm;
+			HumMax_T = tm;
+		}
+	}
+	if (hm == HumMin){
+		HumMinMaxLed=1;
+	} else {
+		HumMinMaxLed=0;
+	} 
+	if (hm == HumMax){
+		HumMinMaxLed +=2;
+	} 
 }
 
-void RF_Sensor::Init(byte adr){
+void RF_Sensor::Init(byte adr, int temp, byte hm, bool Bat, unsigned long tm){
 	Address = adr;
 
-	_NewTemp = true;
-	_NewHum = true;
+	BatWarn = Bat;	
+	Temp = temp;
 
-	Temp = 0;
-	TempMin = 0;
-	TempMax = 0;
-	Hum = 0;
-	HumMin = 0;
-	HumMax = 0;
+	TempMin = temp;
+	TempMax = temp;
+	TempMin_T = tm;
+	TempMax_T = tm;
+
+	Hum = hm;
+	HumMin = hm;
+	HumMax = hm;
+	HumMin_T = tm;
+	HumMax_T = tm;
+
 	HumMinMaxLed=0;
 	TempMinMaxLed=0;
 }
@@ -101,11 +83,6 @@ void RF_Sensor::ClearMinMax(unsigned long tm){
 	TempMinMaxLed=0;
 }
 
-void RF_Sensor::SetDewPoint(){
-	if ((_NewHum == false)&&(_NewTemp == false)){
-	DewPoint = Temp - (100-Hum)*pow(((Temp+273.15)/300),2)/5 - 0.00135*pow(Hum-84,2) + 0.35;
-	}
-}
 
 Baro_Sensor::Baro_Sensor(){
 	MinMaxLed=0;

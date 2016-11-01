@@ -12,8 +12,6 @@
 #define PulsesPerSec 20        				// total pulses send to the display every seccond, used for blinking and screensaver
 #define PulseInterval 1000/PulsesPerSec
 
-#define MaxSensors 2        				// total pulses send to the display every seccond, used for blinking and screensaver
-
 class Nixie_Display
 {
 	public:
@@ -43,7 +41,7 @@ class Nixie_Display
 			
 		void ScreenSaverStart(byte duration);
 		
-		RF_Sensor RFSensor[MaxSensors];
+		RF_Sensor RFSensor[3];
 		Baro_Sensor Baro;
 		TimeElements Time;
 
@@ -54,13 +52,7 @@ class Nixie_Display
 		
 		
 		
-		
-		
-		
-		
 		void Pulse();
-	
-
 		
 		void SetMinMaxLed(byte MinMaxL);
 		

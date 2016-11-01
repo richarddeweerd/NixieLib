@@ -165,7 +165,7 @@ void Nixie_Display::ShowTime(){
 	if (_BlinkPos > 0){
 		//edit mode
 		if (_ValChanged == 0){
-			if (PulseCount < (PulsesPerSec/2)){			
+			if (PulseCount < (PulsesPerSec/2)){
 				switch (_BlinkPos){
 					case 1:
 						byte1=0xBB;
@@ -176,7 +176,7 @@ void Nixie_Display::ShowTime(){
 					case 3:
 						byte3=0xBB;
 						break;
-				}							
+				}
 			} 
 		} 
 	}
@@ -243,7 +243,7 @@ void Nixie_Display::ShowTemp(byte sensor){
 
 	int temp;
 	
-	temp = (int) (RFSensor[sensor].Temp * 10);
+	temp = RFSensor[sensor].Temp;
 	
 	if (temp < 0 ){
 		s = 8; // 8 = - sign
@@ -264,7 +264,7 @@ void Nixie_Display::ShowTemp(byte sensor){
 	temp = temp % 10;
 	b3 = temp;
 
-	byte1 = sensor << 4;
+	byte1 = sensor + 1 << 4;
 	byte1 = byte1 | 11 ;
 
 	byte2 = b1 << 4;
@@ -272,6 +272,16 @@ void Nixie_Display::ShowTemp(byte sensor){
 	
 	byte3 = b3 << 4;
 	byte3 = byte3 | s;
+
+	if (RFSensor[sensor].BatWarn){
+		if (PulseCount < (PulsesPerSec/2)){
+			//bat is low!
+			byte1=0xBB;
+			byte2=0xBB;
+			byte3=0xBB;
+		} 
+	} 
+
 	
 	SetMinMaxLed(RFSensor[sensor].TempMinMaxLed);
 	
@@ -303,13 +313,22 @@ void Nixie_Display::ShowHum(byte sensor){
 	hum = hum % 10;
 	b2 = hum;	
 	
-	byte1 = sensor << 4;
+	byte1 = sensor + 1 << 4;
 	byte1 = byte1 | 11 ;
 
 	byte2 = b1 << 4;
 	byte2 = byte2 | b2 ;
 	
 	byte3 = 2 ; // 2 = % sign
+
+	if (RFSensor[sensor].BatWarn){
+		if (PulseCount < (PulsesPerSec/2)){
+			//bat is low!
+			byte1=0xBB;
+			byte2=0xBB;
+			byte3=0xBB;
+		} 
+	}
 	
 	SetMinMaxLed(RFSensor[sensor].HumMinMaxLed);
 	
